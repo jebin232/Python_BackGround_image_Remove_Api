@@ -1,1 +1,106 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Background Remover and Changer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        .result img {
+            max-width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Background Remover and Changer</h1>
+        <form id="remove-bg-form">
+            <h2>Remove Background</h2>
+            <input type="file" id="remove-bg-image" accept="image/*" required>
+            <button type="submit">Remove Background</button>
+        </form>
+        <form id="change-bg-form">
+            <h2>Change Background</h2>
+            <input type="file" id="change-bg-image" accept="image/*" required>
+            <input type="file" id="background-image" accept="image/*" required>
+            <button type="submit">Change Background</button>
+        </form>
+        <div class="result" id="result"></div>
+    </div>
+    <script>
+        document.getElementById('remove-bg-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('image', document.getElementById('remove-bg-image').files[0]);
+
+            const response = await fetch('/remove_background/', {
+                method: 'POST',
+                body: formData
+            });
+
+            const resultDiv = document.getElementById('result');
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                resultDiv.innerHTML = `<img src="${url}" alt="Background Removed Image">`;
+            } else {
+                const error = await response.json();
+                resultDiv.innerHTML = `<p>${error.detail}</p>`;
+            }
+        });
+
+        document.getElementById('change-bg-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('image', document.getElementById('change-bg-image').files[0]);
+            formData.append('background', document.getElementById('background-image').files[0]);
+
+            const response = await fetch('/change_background/', {
+                method: 'POST',
+                body: formData
+            });
+
+            const resultDiv = document.getElementById('result');
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                resultDiv.innerHTML = `<img src="${url}" alt="Background Changed Image">`;
+            } else {
+                const error = await response.json();
+                resultDiv.innerHTML = `<p>${error.detail}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
