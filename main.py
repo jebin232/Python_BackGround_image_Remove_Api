@@ -1,36 +1,51 @@
-from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import FileResponse
+from flask import Flask, request, jsonify, send_file, render_template
 from rembg import remove
 from PIL import Image
+import PIL
 import io
-import shutil
-import os
 
-app = FastAPI()
+app = Flask(__name__)
 
-# Directory to save temporary image files
-output_dir = 'output_images/'
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+@app.route('/remove_background/', methods=['POST'])
+def remove_background():
+    if 'image' not in request.files:
+        return jsonify({"detail": "No image provided"}), 400
 
-@app.post("/remove_bg/")
-async def remove_background(file: UploadFile):
-    # Save the uploaded image temporarily
-    image_path = os.path.join(output_dir, file.filename)
-    with open(image_path, "wb") as img_file:
-        shutil.copyfileobj(file.file, img_file)
+    file = request.files['image']
+    image = Image.open(file.stream)
+    output = remove(image)
+    
+    img_byte_arr = io.BytesIO()
+    output.save(img_byte_arr, format='PNG')
+    img_byte_arr = img_byte_arr.getvalue()
+    
+    return send_file(io.BytesIO(img_byte_arr), mimetype='image/png')
 
-    # Remove the background
-    input_image = Image.open(image_path)
-    output_image = remove(input_image)
+@app.route('/change_background/', methods=['POST'])
+def change_background():
+    if 'image' not in request.files or 'background' not in request.files:
+        return jsonify({"detail": "Image or background not provided"}), 400
 
-    # Save the output image temporarily
-    output_path = os.path.join(output_dir, f'removed_{file.filename}')
-    output_image.save(output_path, "PNG")
+    image_file = request.files['image']
+    background_file = request.files['background']
 
-    return FileResponse(output_path, media_type="image/png")
+    image = Image.open(image_file.stream)
+    background = Image.open(background_file.stream).convert("RGBA")
+
+    output = remove(image)
+    background = background.resize(output.size, PIL.Image.Resampling.LANCZOS)
+
+    combined = Image.alpha_composite(background, output)
+    
+    img_byte_arr = io.BytesIO()
+    combined.save(img_byte_arr, format='PNG')
+    img_byte_arr = img_byte_arr.getvalue()
+
+    return send_file(io.BytesIO(img_byte_arr), mimetype='image/png')
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000)
