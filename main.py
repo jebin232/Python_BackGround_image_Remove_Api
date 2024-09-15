@@ -48,4 +48,4 @@ def change_background():
     return send_file(io.BytesIO(img_byte_arr), mimetype='image/png')
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3690)
+    app.run(host="0.0.0.0", port=8000)
