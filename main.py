@@ -3,6 +3,8 @@ from rembg import remove
 from PIL import Image
 import PIL
 import io
+import os
+
 
 app = Flask(__name__)
 
